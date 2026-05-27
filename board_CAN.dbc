@@ -1,0 +1,102 @@
+VERSION ""
+
+
+NS_ : 
+	NS_DESC_
+	CM_
+	BA_DEF_
+	BA_
+	VAL_
+	CAT_DEF_
+	CAT_
+	FILTER
+	BA_DEF_DEF_
+	EV_DATA_
+	ENVVAR_DATA_
+	SGTYPE_
+	SGTYPE_VAL_
+	BA_DEF_SGTYPE_
+	BA_SGTYPE_
+	SIG_TYPE_REF_
+	VAL_TABLE_
+	SIG_GROUP_
+	SIG_VALTYPE_
+	SIGTYPE_VALTYPE_
+	BO_TX_BU_
+	BA_DEF_REL_
+	BA_REL_
+	BA_DEF_DEF_REL_
+	BU_SG_REL_
+	BU_EV_REL_
+	BU_BO_REL_
+	SG_MUL_VAL_
+
+BS_:
+
+BU_: ControlPeripheral Brain
+
+
+BO_ 3221225472 VECTOR__INDEPENDENT_SIG_MSG: 0 Vector__XXX
+ SG_ NewSignal_0008 : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ NewSignal_0007 : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ LedControl : 40|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ R_TriggerDeadZone : 32|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ L_TriggerDeadZone : 24|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ R_DeadZone : 16|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ L_DeadZone : 8|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ TimestampLow : 32|8@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 16 ControllerData: 8 ControlPeripheral
+ SG_ L_Stick_x : 0|8@1- (1,0) [0|0] "" Vector__XXX
+ SG_ L_Stick_y : 8|8@1- (1,0) [0|0] "" Vector__XXX
+ SG_ R_Stick_x : 16|8@1- (1,0) [0|0] "" Vector__XXX
+ SG_ R_Stick_y : 24|8@1- (1,0) [0|0] "" Vector__XXX
+ SG_ L2_Trigger : 32|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ R2_Trigger : 40|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Cross : 48|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Square : 49|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Triangle : 50|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Circle : 51|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ DPAD_L : 52|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ DPAD_U : 53|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ DPAD_R : 54|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ DPAD_D : 55|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ L1 : 56|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ R1 : 57|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ L3 : 58|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ R3 : 59|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Start : 60|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Select : 61|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ PS : 62|1@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Connected : 63|1@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 17 ControllerStatus: 8 ControlPeripheral
+ SG_ BatteryLevel : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Connected : 8|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ Timestamp : 16|32@1+ (1,0) [0|0] "" Vector__XXX
+
+BO_ 25 ControllerSettings: 3 Brain
+ SG_ LedControl : 8|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ RumbleValue : 16|8@1+ (1,0) [0|0] "" Vector__XXX
+ SG_ ControlRegister : 0|8@1+ (1,0) [0|0] "" Vector__XXX
+
+
+
+CM_ BU_ ControlPeripheral "Represent the peripheral used to pilot the Board";
+CM_ BU_ Brain "4CYCLES Brain";
+CM_ BO_ 16 "MainController message to brain";
+CM_ SG_ 16 Connected "1 : PS3 Controller is connected
+0 : Connection not established";
+CM_ BO_ 17 "Main Controller informations, battery, RSSI, etc...";
+CM_ BO_ 25 "Signals to pilot, LEDs, Rumbles and dead zones";
+BA_DEF_  "BusType" STRING ;
+BA_DEF_ BO_  "CANFD_BRS" ENUM  "0","1";
+BA_DEF_ BO_  "VFrameFormat" ENUM  "StandardCAN","ExtendedCAN","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","reserved","StandardCAN_FD","ExtendedCAN_FD";
+BA_DEF_DEF_  "BusType" "";
+BA_DEF_DEF_  "CANFD_BRS" "0";
+BA_DEF_DEF_  "VFrameFormat" "StandardCAN";
+BA_ "BusType" "CAN FD";
+BA_ "VFrameFormat" BO_ 16 0;
+BA_ "VFrameFormat" BO_ 17 0;
+VAL_ 16 Connected 1 "Connected" 0 "Disconnected" ;
+
