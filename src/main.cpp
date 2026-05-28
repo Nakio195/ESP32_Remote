@@ -2,7 +2,6 @@
 #include <driver/twai.h>
 #include <PS3Controller.h>
 
-#include "MainController.h"
 #include "RemoteController.h"
 
 void checkTwaiAlerts();
@@ -67,48 +66,44 @@ void loop() {
     heartbeatTimer += dt;
     controllerUpdateTimer += dt;
 
+    // Update Controller (hit if TransmissionEnable == false)
     if(controllerUpdateTimer >= 50)
     {
-        Controller.update();
+        PS3Controller.update();
         controllerUpdateTimer = 0;
     }
-    //Check selected controller and RemoteController connection status
-    PS3Controller.checkConnection(millis());
-    if(CurrentController == Remote && (!PS3Controller.isConnected || !Controller.Data.Reverse))
-    {
-        CurrentController = Local;
-        Serial.println("Switched to Local Controller");
-    }
-    else if(CurrentController == Local && PS3Controller.isConnected && Controller.Data.Reverse)
-    {
-        CurrentController = Remote;
-        Serial.println("Switched to Remote Controller");
-    }
 
+    //Check RemoteController connection status
+    PS3Controller.checkConnection(millis());
+    
+    // Heartbeat Generation
     if(heartbeatTimer >= 1000) 
     {
         heartbeat();
         heartbeatTimer = 0;
-        Serial.println(Controller.Data.Steering);
     }
 
+    // Controller data transmission
     if(controllerDataTimer >= 20 && TransmissionEnable)
     {
-        Controller.update();
+        // Update controller if TransmissionEnable and ready to send
+        PS3Controller.update();
+        controllerUpdateTimer = 0;
 
-        if(PS3Controller.isConnected && CurrentController == Remote)
+        if(PS3Controller.isConnected && CurrentController)
             sendControllerData(PS3Controller.getControllerData());
-        else
-            sendControllerData(Controller.getControllerData());
         controllerDataTimer = 0;
     	delay(1);
     }
 
-    if(controllerStatusTimer > 1500 && TransmissionEnable)
+    // Controller status transmission
+    if((controllerStatusTimer > 1500 || PS3Controller.StatusChanged) && TransmissionEnable)
     {
-        uint8_t* controllerStatus = Controller.getControllerStatus();
+        PS3Controller.StatusChanged = false;
+
+        uint8_t* controllerStatus = PS3Controller.getControllerStatus();
         twai_message_t statusFrame = { 0 };
-        statusFrame.identifier = 0x21;
+        statusFrame.identifier = 0x11;
         statusFrame.extd = 1;
         statusFrame.data_length_code = 4;
         statusFrame.data[0] = controllerStatus[0];
@@ -121,16 +116,24 @@ void loop() {
     	delay(1);
     }
 
+    // CAN RX messages
     twai_message_t RX_Frame;
     if (twai_receive(&RX_Frame, pdMS_TO_TICKS(1)) == ESP_OK)
     {
-        //Serial.print("Received ID: 0x"); Serial.println(RX_Frame.identifier, HEX);
-
-        // Check for specific message (ID = 0x123, first byte = 0xAA)
-        if (RX_Frame.identifier == 0x29 && (RX_Frame.data[0] & 0x01))
+        //RemoteController Settings message
+        if (RX_Frame.identifier == 0x19)
         {
-            Serial.println("Global Transmission enable");
-            TransmissionEnable = true;
+            if(RX_Frame.data[0] & 0x01)
+            {
+                Serial.println("Global Transmission enable");
+                TransmissionEnable = true;
+            }
+
+            else if(!(RX_Frame.data[0] & 0x01))
+            {
+                Serial.println("Global Transmission disabled");
+                TransmissionEnable = false;
+            }
         }   
     }
 
@@ -138,10 +141,12 @@ void loop() {
 
 }
 
+// ################## Utilities functions ##################
+
 void sendControllerData(ControllerData controllerData)
 {
     twai_message_t dataFrame = { 0 };
-    dataFrame.identifier = 0x20;
+    dataFrame.identifier = 0x10;
     dataFrame.extd = 1;
     dataFrame.data_length_code = 4;
     dataFrame.data[0] = controllerData.Throttle;
@@ -157,19 +162,13 @@ void sendControllerData(ControllerData controllerData)
                         controllerData.Reverse;
 
     twai_transmit(&dataFrame, 10);
-}
-
-void sendRemoteControllerStatus()
-{
-    
-}
-
+}   
 
 void heartbeat()
 {
     unsigned long timestamp = millis();
     twai_message_t dataFrame = { 0 };
-    dataFrame.identifier = 0x28;
+    dataFrame.identifier = 0x18;
     dataFrame.extd = 1;
     dataFrame.data_length_code = 4;
     dataFrame.data[0] = timestamp >> 24;
@@ -205,9 +204,6 @@ void checkTwaiStatus() {
     twai_status_info_t status;
     twai_get_status_info(&status);
 
-    //Serial.printf("TX Buffer: %d | RX Queue: %d | TX Error Counter: %d | RX Error Counter: %d\n",
-    //              status.msgs_to_tx, status.msgs_to_rx, status.tx_error_counter, status.rx_error_counter);
-
     if(status.tx_error_counter > 10)
       Serial.printf("TX Error Counter: %d", status.tx_error_counter);
     if(status.rx_error_counter > 10)
@@ -228,13 +224,12 @@ void checkTwaiStatus() {
     if(status.rx_error_counter > 30)
       Serial.printf("RX Error Counter: %d", status.rx_error_counter);
 
-    //Serial.printf("Bus State: ");
     switch (status.state) {
         case TWAI_STATE_STOPPED:
             Serial.println("Stopped");
             break;
         case TWAI_STATE_RUNNING:
-            //Serial.println("Running");
+
             break;
         case TWAI_STATE_BUS_OFF:
             Serial.println("Bus-Off (Critical Error)");

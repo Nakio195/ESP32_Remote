@@ -14,7 +14,9 @@
 RemoteController PS3Controller;
 
 RemoteController::RemoteController() 
-{    
+{   
+    StatusChanged = true;
+
 	L_Stick_x = 0;
 	L_Stick_y = 0;
 	R_Stick_x = 0;
@@ -96,17 +98,33 @@ void RemoteController::onConnect()
     Serial.println("Controller Connected");
 	PS3Controller.isConnected = true;
     PS3Controller.lastReportTime = millis();
+    PS3Controller.StatusChanged = true;
 }
 
 void RemoteController::onDisconnect()
 {
     Serial.println("Controller Disconnected");
 	PS3Controller.isConnected = false;
+    PS3Controller.StatusChanged = true;
 }
 
 void RemoteController::tick()
 {
     lastReportTime = millis();;
+}
+
+
+uint8_t* RemoteController::getControllerStatus()
+{
+    uint32_t timestamp = millis();
+    ControllerStatus[0] = BatteryLevel;
+    ControllerStatus[1] = isConnected;
+	ControllerStatus[2] = timestamp >> 24 & 0xFF;
+	ControllerStatus[3] = timestamp >> 16 & 0xFF;
+	ControllerStatus[4] = timestamp >> 8 & 0xFF;
+	ControllerStatus[5] = timestamp & 0xFF;
+
+	return ControllerStatus;
 }
 
 void RemoteController::checkConnection(uint32_t currentTime)
@@ -118,8 +136,6 @@ void RemoteController::checkConnection(uint32_t currentTime)
 
 void RemoteController::update()
 {
-    uint32_t currentTime = millis();
-    // Heartbeat every 100ms
     PS3Controller.tick();
     //--- Digital cross/square/triangle/circle button events ---
     if( Ps3.event.button_down.cross )
